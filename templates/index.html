@@ -1,0 +1,64 @@
+<!-- ---------- templates/index.html ---------- -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>智能客服</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="history-list" id="historyList"></div>
+        </div>
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="input-area">
+                <input type="text" id="userInput" placeholder="输入您的问题...">
+                <button onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let history = [];
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addMessage('user', message);
+
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: message, history: history})
+            });
+
+            const data = await response.json();
+            addMessage('assistant', data.response);
+            history = data.history;
+            updateHistoryList();
+            input.value = '';
+        }
+
+        function addMessage(role, content) {
+            const messagesDiv = document.getElementById('chatMessages');
+            messagesDiv.innerHTML += `
+                <div class="message ${role}">
+                    <div class="role">${role === 'user' ? '您' : '客服'}</div>
+                    <div class="content">${content}</div>
+                </div>
+            `;
+        }
+
+        function updateHistoryList() {
+            const listDiv = document.getElementById('historyList');
+            listDiv.innerHTML = history.map((item, index) => `
+                <div class="history-item ${item.role}">
+                    对话${index + 1}: ${item.content.substring(0, 20)}...
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
